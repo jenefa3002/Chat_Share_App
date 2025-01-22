@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Chat</title>
+    <style>
+        /* General Reset */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Section */
+        .chat-header {
+            padding: 15px;
+            background-color: #075E54; /* WhatsApp-like header color */
+            color: white;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* Messages Section */
+        .messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: #e5ddd5;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 8px;
+            background-color: #ddd;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background-color: #aaa;
+            border-radius: 4px;
+        }
+
+        /* Message Bubbles */
+        .message-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .message-container.me {
+            justify-content: flex-end;
+        }
+
+        .message-container.other {
+            justify-content: flex-start;
+        }
+
+        /* Avatar */
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: #ccc;
+            flex-shrink: 0;
+        }
+
+        /* Message Bubble */
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .message-container.me .message-bubble {
+            background-color: #28b463;
+            color: white;
+            text-align: left;
+        }
+
+        .message-container.other .message-bubble {
+            background-color: white;
+            color: #000;
+            text-align: left;
+        }
+
+        /* Username */
+        .username {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #7b7d7d;
+        }
+
+        /* Timestamp */
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: gray;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        /* Input Section */
+        .chat-input {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            background-color: #fff;
+            border-top: 1px solid #ccc;
+            gap: 5px;
+        }
+
+        .chat-input textarea {
+            flex: 1;
+            resize: none;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 5px 5px;
+            font-size: 1rem;
+            height: 30px;
+            outline: none;
+            background-color: #f9f9f9;
+        }
+
+        .chat-input button {
+            background-color: #075E54;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 5px 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .chat-input button:hover {
+            background-color: #004d36;
+        }
+        .input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        #message-input {
+            width: 85%;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-right: 10px;
+        }
+        #send-btn {
+            width: 50px;
+            height: 50px;
+            background-color: #0095f6;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #send-btn:hover {
+            background-color: #007bb5;
+        }
+        #send-btn img {
+            width: 25px;
+            height: 25px;
+        }
+        #share-btn {
+            width: 50px;
+            height: 50px;
+            background-color: #0095f6;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #share-btn:hover {
+            background-color: #007bb5;
+        }
+        #share-btn img {
+            width: 25px;
+            height: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            Public Chat
+        </div>
+        <!-- Messages Section -->
+        <div class="messages" id="chat-messages">
+            {% for message in messages %}
+                <div class="message-container {% if message.user.username == user.username %}me{% else %}other{% endif %}">
+                    {% if message.user.username != user.username %}
+                        <div class="avatar"></div> <!-- Optional: Replace with actual user avatar -->
+                    {% endif %}
+                    <div class="message-bubble">
+                        <div class="username">{{ message.user.username }}</div>
+                        <div class="message-content">{{ message.content }}</div>
+                        <div class="message-timestamp">{{ message.timestamp|date:"H:i" }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Input Section -->
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Type your message..." />
+            <button id="send-btn">
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/sent.png" alt="Send">
+            </button>
+            <button id="share-btn">
+                <img src="https://img.icons8.com/?size=100&id=IId2iYTrumrQ&format=png&color=000000" alt="share">
+            </button>
+
+        </div>
+        <div id="screen-share-container">
+            <video id="shared-screen" autoplay playsinline></video>
+        </div>
+
+
+
+    <script>
+const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/');
+// WebSocket for screen sharing
+const shareSocket = new WebSocket('ws://' + window.location.host + '/ws/screenshare/');
+
+shareSocket.onopen = function() {
+    console.log("Screen sharing WebSocket connected!");
+};
+
+shareSocket.onerror = function(error) {
+    console.error("Screen sharing WebSocket error:", error);
+};
+
+
+// Handle incoming screen share messages
+shareSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const screenShareContainer = document.getElementById('screen-share-container');
+
+    // Check if the screen share container exists
+    if (screenShareContainer) {
+        let video = document.getElementById('shared-screen');
+
+        // If the video doesn't exist, create it and append to the container
+        if (!video) {
+            video = document.createElement('video');
+            video.id = 'shared-screen';
+            video.style.width = '100%';
+            video.style.height = 'auto';
+            video.autoplay = true;
+            video.playsinline = true;
+            screenShareContainer.appendChild(video);
+        }
+
+        // Update the video with the shared screen stream (assuming you're sending a MediaStream object)
+        video.srcObject = data.stream; // Assuming 'stream' is a MediaStream object received from the WebSocket
+    }
+};
+
+// Function to start screen sharing
+function shareScreen() {
+    if (shareSocket.readyState === WebSocket.OPEN) {
+        console.log("WebSocket is open, starting screen capture...");
+        navigator.mediaDevices.getDisplayMedia({ video: true })
+            .then(stream => {
+                const video = document.getElementById('shared-screen');
+                video.srcObject = stream;  // Attach the stream directly to the video element
+
+                // Send the MediaStream via WebSocket (you can either use a custom protocol for this or send chunks)
+                shareSocket.send(JSON.stringify({ stream: stream }));
+
+                // Set up interval or event-based updates if you need to send the stream data manually
+                stream.onactive = function() {
+                    console.log('Stream is active and being shared!');
+                };
+            })
+            .catch(err => {
+                console.error("Error getting display media:", err);
+            });
+    } else {
+        console.error("Screen sharing WebSocket is not open. Cannot start sharing.");
+    }
+}
+
+document.getElementById('share-btn').onclick = function() {
+    console.log("Share button clicked. Starting screen sharing...");
+    shareScreen();  // Call the screen sharing function
+};
+
+
+document.getElementById('share-btn').onclick = function() {
+    console.log("Share button clicked. Starting screen sharing...");
+    shareScreen();  // Call the screen sharing function
+};
+
+chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const chatMessages = document.getElementById('chat-messages');
+    const newMessage = `
+        <div class="message-container ${data.username === "{{ user.username }}" ? 'me' : 'other'}">
+            ${data.username !== "{{ user.username }}" ? '<div class="avatar"></div>' : ''}
+            <div class="message-bubble">
+                <div class="username">${data.username}</div>
+                <div class="message-content">${data.message}</div>
+                <div class="message-timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>
+        </div>
+    `;
+    chatMessages.insertAdjacentHTML('beforeend', newMessage);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+};
+
+document.getElementById('send-btn').onclick = function() {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    const username = "{{ user.username }}";
+
+    if (chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'username': username
+        }));
+    } else {
+        console.error("WebSocket is not open. Cannot send message.");
+    }
+
+    messageInput.value = '';
+};
+
+    </script>
+</body>
+</html>
