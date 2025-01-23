@@ -1,0 +1,3 @@
+Runing command
+
+daphne -b 127.0.0.1 -p 8000 chat_project.asgi:application
