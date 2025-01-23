@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/75dd033d-fb2e-4a1b-be4e-301a79aee4cf)
+![image](https://github.com/user-attachments/assets/6507a991-1b3c-45f3-b99d-21fddb4e9ec0)
 Install Required Software
 
 Python (3.8+ recommended)
