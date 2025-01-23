@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -29,7 +29,7 @@
         /* Header Section */
         .chat-header {
             padding: 15px;
-            background-color: #075E54; /* WhatsApp-like header color */
+            background-color: #4caf50;
             color: white;
             text-align: center;
             font-size: 1.2rem;
@@ -156,7 +156,7 @@
         .input-container {
             display: flex;
             padding: 10px;
-            background-color: #fff;
+            background-color: purple;
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -210,6 +210,26 @@
             width: 25px;
             height: 25px;
         }
+         #file-btn {
+            width: 50px;
+            height: 50px;
+            background-color: #0095f6;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #file-btn:hover {
+            background-color: #007bb5;
+        }
+        #file-btn img {
+            width: 25px;
+            height: 25px;
+        }
     </style>
 </head>
 <body>
@@ -228,6 +248,13 @@
                     <div class="message-bubble">
                         <div class="username">{{ message.user.username }}</div>
                         <div class="message-content">{{ message.content }}</div>
+                        {% if message.file %}
+                        <a href="{{ message.file.url }}" download>Download File</a>
+                        {% endif %}
+                        {% if message.file %}
+    <img src="{{ message.file.url }}" alt="image" style="max-width: 200px;">
+{% endif %}
+
                         <div class="message-timestamp">{{ message.timestamp|date:"H:i" }}</div>
                     </div>
                 </div>
@@ -236,6 +263,8 @@
 
         <!-- Input Section -->
         <div class="chat-input">
+            <button id="file-btn"><img src="https://img.icons8.com/?size=100&id=11&format=png&color=000000"></button>
+            <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .docx, .zip" />
             <input type="text" id="message-input" placeholder="Type your message..." />
             <button id="send-btn">
                 <img src="https://img.icons8.com/ios-filled/50/ffffff/sent.png" alt="Send">
@@ -248,10 +277,9 @@
         <div id="screen-share-container">
             <video id="shared-screen" autoplay playsinline></video>
         </div>
-
-
-
+    </div>
     <script>
+
 const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/');
 // WebSocket for screen sharing
 const shareSocket = new WebSocket('ws://' + window.location.host + '/ws/screenshare/');
@@ -343,6 +371,7 @@ chatSocket.onmessage = function(e) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 };
 
+
 document.getElementById('send-btn').onclick = function() {
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value.trim();
@@ -359,7 +388,42 @@ document.getElementById('send-btn').onclick = function() {
 
     messageInput.value = '';
 };
+document.getElementById('file-btn').onclick = function() {
+    document.getElementById('file-input').click();
+    console.log("Attach file clicked");
+};
+
+document.getElementById('file-input').onchange = function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Handle file upload here
+        uploadFile(file);
+    }
+};
+function sendFileToServer(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/chat/send-file/', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Handle response from the server (e.g., get file URL)
+        sendMessageToChat(data.file_url);
+    });
+}
+
+function sendMessageToChat(fileUrl) {
+    chatSocket.send(JSON.stringify({
+        'message': 'New file shared',
+        'file_url': fileUrl,
+        'username': "{{ user.username }}"
+    }));
+}
+
 
     </script>
-</body>
+ </body>
 </html>

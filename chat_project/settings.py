@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'channels',
     'chat',
     'django.contrib.admin',
@@ -52,7 +53,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'chat_project.urls'
-
+MEDIA_ROOT = '/assets/media/'
+MEDIA_URL = '/media/'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -69,35 +71,42 @@ TEMPLATES = [
     },
 ]
 
+
+WEBSOCKET_URL = '/ws/'
+
+INSTALLED_APPS += ['ws4redis']
+
+CACHES = {
+       "default": {
+           "BACKEND": "django_redis.cache.RedisCache",
+           "LOCATION": "redis://127.0.0.1:6379/1",
+           "OPTIONS": {
+               "CLIENT_CLASS": "django_redis.client.DefaultClient",
+           }
+       }
+   }
+
 WSGI_APPLICATION = 'chat_project.wsgi.application'
 DEVELOPMENT = 'live'
 # DEVELOPMENT = "local"
 DEBUG = True
-
-if DEVELOPMENT == "http://127.0.0.1:8000/":
-    print("Cannot be connected")
-    # Development
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-else:
-    DEBUG = True
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',  # Example for SQLite
-            'NAME': BASE_DIR / "db.sqlite3",
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',  # Example for SQLite
+        'NAME': BASE_DIR / "db.sqlite3",
     }
-    SITE_URL = "http://localhost:8000"
+}
+SITE_URL = "http://localhost:8000"
 
+STATIC_URL = '/static/'
 
 
 ASGI_APPLICATION = 'chat_project.asgi.application'
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
         },
     },
 }

@@ -36,4 +36,17 @@ def chat_view(request):
     return render(request, 'chat/chat.html', {'messages': messages})
 
 def screenshare_view(request):
-    return render(request, 'core/screenshare.html')
+    return render(request, 'chat/chat.html')
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from .models import Message
+
+def send_file(request):
+    if request.method == 'POST' and request.FILES['file']:
+        uploaded_file = request.FILES['file']
+        # Save the file
+        message = Message.objects.create(user=request.user, file=uploaded_file)
+        file_url = message.file.url  # Get the URL of the uploaded file
+        return JsonResponse({'file_url': file_url})
+
+    return JsonResponse({'error': 'No file uploaded'}, status=400)
