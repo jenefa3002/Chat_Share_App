@@ -41,6 +41,7 @@
             flex: 1;
             padding: 15px;
             overflow-y: auto;
+            max-height: 500px;
             background-color: #e5ddd5;
             display: flex;
             flex-direction: column;
@@ -231,6 +232,7 @@
             height: 25px;
         }
     </style>
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="chat-container">
@@ -252,7 +254,7 @@
                         <a href="{{ message.file.url }}" download>Download File</a>
                         {% endif %}
                         {% if message.file %}
-    <img src="{{ message.file.url }}" alt="image" style="max-width: 200px;">
+    <img src="{{ message.file.url }}" style="max-width: 200px; background-color: white">
 {% endif %}
 
                         <div class="message-timestamp">{{ message.timestamp|date:"H:i" }}</div>
@@ -260,7 +262,6 @@
                 </div>
             {% endfor %}
         </div>
-
         <!-- Input Section -->
         <div class="chat-input">
             <button id="file-btn"><img src="https://img.icons8.com/?size=100&id=11&format=png&color=000000"></button>
@@ -280,29 +281,18 @@
     </div>
     <script>
 
-const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/');
-// WebSocket for screen sharing
 const shareSocket = new WebSocket('ws://' + window.location.host + '/ws/screenshare/');
-
 shareSocket.onopen = function() {
     console.log("Screen sharing WebSocket connected!");
 };
-
 shareSocket.onerror = function(error) {
     console.error("Screen sharing WebSocket error:", error);
 };
-
-
-// Handle incoming screen share messages
 shareSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     const screenShareContainer = document.getElementById('screen-share-container');
-
-    // Check if the screen share container exists
     if (screenShareContainer) {
         let video = document.getElementById('shared-screen');
-
-        // If the video doesn't exist, create it and append to the container
         if (!video) {
             video = document.createElement('video');
             video.id = 'shared-screen';
@@ -313,24 +303,21 @@ shareSocket.onmessage = function(e) {
             screenShareContainer.appendChild(video);
         }
 
-        // Update the video with the shared screen stream (assuming you're sending a MediaStream object)
-        video.srcObject = data.stream; // Assuming 'stream' is a MediaStream object received from the WebSocket
+        // Set the received stream as the video source
+        video.srcObject = data.stream;  // Assuming 'stream' is a MediaStream object received
     }
 };
-
-// Function to start screen sharing
 function shareScreen() {
     if (shareSocket.readyState === WebSocket.OPEN) {
         console.log("WebSocket is open, starting screen capture...");
         navigator.mediaDevices.getDisplayMedia({ video: true })
             .then(stream => {
                 const video = document.getElementById('shared-screen');
-                video.srcObject = stream;  // Attach the stream directly to the video element
+                video.srcObject = stream;
 
-                // Send the MediaStream via WebSocket (you can either use a custom protocol for this or send chunks)
+                // Send the stream to the server
                 shareSocket.send(JSON.stringify({ stream: stream }));
 
-                // Set up interval or event-based updates if you need to send the stream data manually
                 stream.onactive = function() {
                     console.log('Stream is active and being shared!');
                 };
@@ -342,19 +329,25 @@ function shareScreen() {
         console.error("Screen sharing WebSocket is not open. Cannot start sharing.");
     }
 }
-
 document.getElementById('share-btn').onclick = function() {
     console.log("Share button clicked. Starting screen sharing...");
-    shareScreen();  // Call the screen sharing function
+    shareScreen();
 };
 
 
-document.getElementById('share-btn').onclick = function() {
-    console.log("Share button clicked. Starting screen sharing...");
-    shareScreen();  // Call the screen sharing function
-};
+const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/');
+document.getElementById('send-btn').onclick = function() {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    const username = "{{ user.username }}";
+    console.log("Send button clicked. Message Sending ....");
+    chatSocket.send(JSON.stringify({
+            'message': message,
+            'username': username
+        }));
 
-chatSocket.onmessage = function(e) {
+    messageInput.value = '';
+    chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     const chatMessages = document.getElementById('chat-messages');
     const newMessage = `
@@ -370,24 +363,9 @@ chatSocket.onmessage = function(e) {
     chatMessages.insertAdjacentHTML('beforeend', newMessage);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 };
-
-
-document.getElementById('send-btn').onclick = function() {
-    const messageInput = document.getElementById('message-input');
-    const message = messageInput.value.trim();
-    const username = "{{ user.username }}";
-
-    if (chatSocket.readyState === WebSocket.OPEN) {
-        chatSocket.send(JSON.stringify({
-            'message': message,
-            'username': username
-        }));
-    } else {
-        console.error("WebSocket is not open. Cannot send message.");
-    }
-
-    messageInput.value = '';
 };
+
+
 document.getElementById('file-btn').onclick = function() {
     document.getElementById('file-input').click();
     console.log("Attach file clicked");
@@ -415,13 +393,35 @@ function sendFileToServer(file) {
     });
 }
 
-function sendMessageToChat(fileUrl) {
-    chatSocket.send(JSON.stringify({
-        'message': 'New file shared',
-        'file_url': fileUrl,
-        'username': "{{ user.username }}"
-    }));
-}
+document.getElementById('file-btn').onclick = function() {
+    document.getElementById('file-input').click();
+};
+
+document.getElementById('file-input').onchange = function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Upload the file to the server
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/upload-file/', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.file_url) {
+                // Send the file URL in the WebSocket message
+                chatSocket.send(JSON.stringify({
+                    'message': 'File shared!',
+                    'file_url': data.file_url,
+                    'username': "{{ user.username }}"
+                }));
+            }
+        })
+        .catch(error => console.error('File upload failed:', error));
+    }
+};
 
 
     </script>

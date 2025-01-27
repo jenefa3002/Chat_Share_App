@@ -7,5 +7,6 @@ urlpatterns = [
     path('signup/', signup, name='signup'),
     path('save_message/', views.save_message, name='save_message'),
     path('', screenshare_view, name='screenshare'),
+    path('upload-file/', views.upload_file, name='upload_file'),
 
 ]

@@ -106,9 +106,21 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [
+                "redis://:SAquUXnJZaVVSFzK5oaCHy9x9nWN2OZo@redis-14746.c8.us-east-1-3.ec2.redns.redis-cloud.com:14746"
+            ],
         },
     },
+}
+#redis-cli -h redis-14746.c8.us-east-1-3.ec2.redns.redis-cloud.com -p 14746 -a SAquUXnJZaVVSFzK5oaCHy9x9nWN2OZo
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://:your_redis_password@redis-14746.c8.us-east-1-3.ec2.redns.redis-cloud.com:14746/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
 }
 
 # Password validation

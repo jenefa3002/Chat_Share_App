@@ -1,10 +1,11 @@
+from django.core.files.storage import FileSystemStorage
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
-
 from .forms import SignupForm
-from django.http import JsonResponse
-from .models import Message
 from django.contrib.auth.models import User
+from .models import Message
+
 
 def signup(request):
     if request.method == 'POST':
@@ -32,21 +33,19 @@ def save_message(request):
 
 def chat_view(request):
     # messages = Message.objects.all()
-    messages = Message.objects.all().order_by('timestamp')[:20]  # Get the last 20 messages
+    messages = Message.objects.all().order_by('timestamp')  # Get the last 20 messages
     return render(request, 'chat/chat.html', {'messages': messages})
 
 def screenshare_view(request):
     return render(request, 'chat/chat.html')
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
-from .models import Message
 
-def send_file(request):
+
+@csrf_exempt
+def upload_file(request):
     if request.method == 'POST' and request.FILES['file']:
-        uploaded_file = request.FILES['file']
-        # Save the file
-        message = Message.objects.create(user=request.user, file=uploaded_file)
-        file_url = message.file.url  # Get the URL of the uploaded file
+        file = request.FILES['file']
+        fs = FileSystemStorage()
+        filename = fs.save(file.name, file)
+        file_url = fs.url(filename)
         return JsonResponse({'file_url': file_url})
-
-    return JsonResponse({'error': 'No file uploaded'}, status=400)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
